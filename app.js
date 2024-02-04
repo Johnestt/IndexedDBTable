@@ -1,7 +1,7 @@
 let dataLength = 0;
 
-window.addEventListener('load', () => {
-    // Загрузите данные из IndexedDB и обновите значение dataLength
+function loaderData () {
+        // Загрузите данные из IndexedDB и обновите значение dataLength
     openDB().then((db) => {
         const transaction = db.transaction(['myObjectStore'], 'readonly');
         const objectStore = transaction.objectStore('myObjectStore');
@@ -15,7 +15,9 @@ window.addEventListener('load', () => {
             loadDataForPage(currentPage);
         };
     });
-});
+}
+
+window.addEventListener('load', loaderData);
 
 // ...
 
@@ -44,12 +46,14 @@ function loadDataForPage(page) {
             const itemsPerPage = 50;
             const offset = (page - 1) * itemsPerPage;
             const pageData = data.slice(offset, offset + itemsPerPage);
+            console.log(pageData)
 
             pageData.forEach((item) => {
                 const row = tableBody.insertRow();
                 row.insertCell().innerText = item.id;
                 row.insertCell().innerText = item.name;
                 row.insertCell().innerText = item.value;
+                console.log(item.name)
 
                 // Add edit and delete buttons
                 const editButton = document.createElement('button');
@@ -252,3 +256,58 @@ function exportToExcel() {
 }
 
 document.getElementById('exportButton').addEventListener('click', exportToExcel);
+
+function importFromExcel(event) {
+    const file = event.target.files[0];
+    const reader = new FileReader();
+
+    reader.onload = (event) => {
+        const workbook = XLSX.read(event.target.result, { type: 'binary' });
+        const sheetName = workbook.SheetNames[0];
+        const xlData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+        // Преобразуйте данные перед импортом
+        const transformedData = xlData.map((item) => {
+            return {
+                id: generateUniqueId(),
+                name: parseFloat(item.name) || item.name,
+                value: parseFloat(item.value) || item.value
+            };
+        });
+
+        openDB().then((db) => {
+            const transaction = db.transaction(['myObjectStore'], 'readwrite');
+            const objectStore = transaction.objectStore('myObjectStore');
+
+            transformedData.forEach((item) => {
+                const request = objectStore.add(item);
+
+                request.onsuccess = () => {
+                    console.log('Данные успешно импортированы');
+                };
+
+                request.onerror = (error) => {
+                    console.error('Error importing data:', error);
+                };
+            });
+
+            transaction.oncomplete = () => {
+                alert('Импорт завершен');
+                loaderData();
+            };
+        });
+    };
+
+    reader.onerror = (error) => {
+        console.error('Error reading file:', error);
+    };
+
+    reader.readAsBinaryString(file);
+}
+
+document.getElementById('importButton').addEventListener('click', () => {
+    const importFile = document.getElementById('importFile');
+    importFile.click();
+});
+
+document.getElementById('importFile').addEventListener('change', importFromExcel);
