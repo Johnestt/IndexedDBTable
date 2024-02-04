@@ -111,7 +111,7 @@ function addDataToDB(name, value) {
 
         request.onsuccess = () => {
             alert('Данные добавлены');
-            loadDataForPage(1);
+            loadDataForPage(localStorage.getItem('currentPage'));
             //loadDataFromDB(1);
         };
     });
@@ -238,12 +238,13 @@ function exportToExcel() {
                 .getAll();
         })
         .then(data => {
-            const workbook = XLSX.utils.book_new();
-            console.log(data)
-            const worksheet = XLSX.utils.json_to_sheet(data);
-            console.log(worksheet)
-            XLSX.utils.book_append_sheet(workbook, worksheet, "Data");
-            XLSX.writeFile(workbook, "data.xlsx");
+            data.onsuccess = (event) => {
+                console.log(data.result)
+                const workbook = XLSX.utils.book_new();
+                const worksheet = XLSX.utils.json_to_sheet(data.result);
+                XLSX.utils.book_append_sheet(workbook, worksheet, "Data");
+                XLSX.writeFile(workbook, "data.xlsx");
+            }
         })
         .catch(error => {
             console.error("Error exporting data to Excel:", error);
