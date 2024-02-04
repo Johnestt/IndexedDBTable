@@ -1,13 +1,5 @@
 let dataLength = 0;
 
-// ...
-
-document.getElementById('paginate').addEventListener('click', () => {
-    const currentPage = parseInt(localStorage.getItem('currentPage')) || 1;
-    createPaginationControls(dataLength, currentPage);
-    loadDataForPage(currentPage);
-});
-
 window.addEventListener('load', () => {
     // Загрузите данные из IndexedDB и обновите значение dataLength
     openDB().then((db) => {
@@ -121,54 +113,6 @@ function addDataToDB(name, value) {
             alert('Данные добавлены');
             loadDataForPage(1);
             //loadDataFromDB(1);
-        };
-    });
-}
-
-function loadDataFromDB(page) {
-    openDB().then((db) => {
-        const transaction = db.transaction(['myObjectStore'], 'readonly');
-        const objectStore = transaction.objectStore('myObjectStore');
-
-        const request = objectStore.getAll();
-
-        request.onsuccess = () => {
-            const data = request.result;
-            const tableBody = document.getElementById('dataTable').getElementsByTagName('tbody')[0];
-            tableBody.innerHTML = '';
-
-            const itemsPerPage = 100;
-            const offset = (page - 1) * itemsPerPage;
-            const pageData = data.slice(offset, offset + itemsPerPage);
-
-            pageData.forEach((item) => {
-                const row = tableBody.insertRow();
-                row.insertCell().innerText = item.id
-                                row.insertCell().innerText = item.name;
-                row.insertCell().innerText = item.value;
-                
-                // Add edit and delete buttons
-                const editButton = document.createElement('button');
-                editButton.innerText = 'Редактировать';
-                editButton.addEventListener('click', () => {
-                    const updatedName = prompt('Введите обновленное имя:');
-                    const updatedValue = prompt('Введите обновленное значение:');
-
-                    if (updatedName && updatedValue) {
-                        updateDataInDB(item.id, updatedName, updatedValue);
-                    }
-                });
-                row.appendChild(editButton);
-
-                const deleteButton = document.createElement('button');
-                deleteButton.innerText = 'Удалить';
-                deleteButton.addEventListener('click', () => {
-                    deleteDataFromDB(item.id);
-                });
-                row.appendChild(deleteButton);
-            });
-
-            localStorage.setItem('currentPage', page);
         };
     });
 }
