@@ -311,3 +311,26 @@ document.getElementById('importButton').addEventListener('click', () => {
 });
 
 document.getElementById('importFile').addEventListener('change', importFromExcel);
+
+document.getElementById('clearDB').addEventListener('click', () => {
+    const confirmClearDB = confirm('Вы уверены, что хотите очистить всю базу данных?');
+    if (confirmClearDB) {
+        clearDB();
+    }
+});
+
+function clearDB() {
+    openDB().then((db) => {
+        const transaction = db.transaction(['myObjectStore'], 'readwrite');
+        const objectStore = transaction.objectStore('myObjectStore');
+
+        return objectStore.clear();
+    }).then(() => {
+        alert('База данных очищена');
+        localStorage.removeItem('currentPage');
+        loadDataForPage(1);
+        createPaginationControls(0, 1)
+    }).catch((error) => {
+        console.error('Error clearing database:', error);
+    });
+}
